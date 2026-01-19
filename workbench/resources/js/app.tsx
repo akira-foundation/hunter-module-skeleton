@@ -10,17 +10,19 @@ interface PageModule {
     };
 }
 
-function generateBreadcrumbs(pageName: string): BreadcrumbItem[] {
-    const parts = pageName.split("/");
+function generateBreadcrumbsFromUrl(): BreadcrumbItem[] {
+    const path = window.location.pathname;
+    const parts = path.split("/").filter(Boolean);
     const breadcrumbs: BreadcrumbItem[] = [{ title: "Home", href: "/" }];
 
     let href = "";
     for (const part of parts) {
-        href += `/${part.toLowerCase()}`;
-        breadcrumbs.push({
-            title: part.replace(/([A-Z])/g, " $1").trim(),
-            href,
-        });
+        href += `/${part}`;
+        const title = part
+            .split("-")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ");
+        breadcrumbs.push({ title, href });
     }
 
     return breadcrumbs;
@@ -58,10 +60,12 @@ createInertiaApp({
         // Apply default layout to pages that don't have one
         const pageComponent = page.default;
         if (!pageComponent.layout) {
-            const breadcrumbs = isModulePage ? generateBreadcrumbs(name) : [];
-            pageComponent.layout = (page: ReactNode) => (
-                <AppLayout breadcrumbs={breadcrumbs}>{page}</AppLayout>
-            );
+            pageComponent.layout = (page: ReactNode) => {
+                const breadcrumbs = isModulePage
+                    ? generateBreadcrumbsFromUrl()
+                    : [];
+                return <AppLayout breadcrumbs={breadcrumbs}>{page}</AppLayout>;
+            };
         }
 
         return page;
