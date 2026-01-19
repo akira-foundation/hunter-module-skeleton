@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme {
+    --font-sans:
+        ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+        "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+    --color-sidebar-background: var(--color-zinc-950);
+    --color-sidebar-foreground: var(--color-zinc-100);
+    --color-sidebar-primary: var(--color-zinc-100);
+    --color-sidebar-primary-foreground: var(--color-zinc-950);
+    --color-sidebar-accent: var(--color-zinc-800);
+    --color-sidebar-accent-foreground: var(--color-zinc-100);
+    --color-sidebar-border: var(--color-zinc-800);
+    --color-sidebar-ring: var(--color-zinc-700);
+}
+
+html {
+    background-color: var(--color-zinc-950);
+}
