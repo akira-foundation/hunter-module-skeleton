@@ -17,29 +17,19 @@ final class :StudlyModuleName:ServiceProvider extends ModuleServiceProvider
     {
         $module
             ->identifier(':module_slug')
-            ->name(':module_name')
+            ->name(':module_title')
             ->description(':package_description')
             ->hasConfig()
             ->hasRoutes()
             ->navigation([
-                NavItem::make(':module_name')
-                    ->route(':module_slug.index')
-                    ->icon('LayoutGrid')
-                    ->order(10),
-
-                NavGroup::make(':module_name Group')
-                    ->icon('FolderOpen')
-                    ->order(20)
+                NavGroup::make(':module_title')
+                    ->icon('Package')
+                    ->order(10)
                     ->items([
                         NavItem::make('Overview')
                             ->route(':module_slug.index')
-                            ->icon('Home')
+                            ->icon('LayoutGrid')
                             ->order(1),
-
-                        NavItem::make('Settings')
-                            ->route(':module_slug.index')
-                            ->icon('Settings')
-                            ->order(2),
                     ]),
             ]);
     }
