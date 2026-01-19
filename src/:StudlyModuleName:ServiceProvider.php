@@ -21,15 +21,4 @@ final class :StudlyModuleName:ServiceProvider extends ModuleServiceProvider
             ->hasConfig()
             ->hasRoutes();
     }
-
-    #[Override]
-    public function registerNavigation(): void
-    {
-        // Register your navigation items here
-        // Example:
-        // $this->module->navigation([
-        //     NavItem::make(':module_name', '/:module_slug')
-        //         ->icon('icon-name'),
-        // ]);
-    }
 }
