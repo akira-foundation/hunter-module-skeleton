@@ -4,47 +4,32 @@ declare(strict_types=1);
 
 namespace :VendorNamespace:\:StudlyModuleName:;
 
-use Hunter\Module\Module\ModuleServiceProvider;
+use Hunter\Module\Contracts\ModuleServiceProvider;
+use Hunter\Module\Module\Module;
+use Hunter\Module\Navigation\NavItem;
 use Override;
-use Spatie\LaravelPackageTools\Package;
 
 final class :StudlyModuleName:ServiceProvider extends ModuleServiceProvider
 {
     #[Override]
-    public function configurePackage(Package $package): void
+    public function configureModule(Module $module): void
     {
-        $package
-            ->name(':module_slug')
-            ->hasConfigFile()
-            ->hasRoutes('web');
+        $module
+            ->identifier(':module_slug')
+            ->name(':module_name')
+            ->description(':package_description')
+            ->hasConfig()
+            ->hasRoutes();
     }
 
     #[Override]
-    protected function moduleIdentifier(): string
-    {
-        return ':module_slug';
-    }
-
-    #[Override]
-    protected function moduleName(): string
-    {
-        return ':module_name';
-    }
-
-    #[Override]
-    protected function moduleDescription(): string
-    {
-        return ':package_description';
-    }
-
-    #[Override]
-    protected function registerNavigation(): void
+    public function registerNavigation(): void
     {
         // Register your navigation items here
         // Example:
-        // $this->nav(
+        // $this->module->navigation([
         //     NavItem::make(':module_name', '/:module_slug')
-        //         ->icon('icon-name')
-        // );
+        //         ->icon('icon-name'),
+        // ]);
     }
 }
