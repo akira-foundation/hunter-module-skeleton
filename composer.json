@@ -1,5 +1,6 @@
 {
     "name": ":vendor_slug/hunter-:module_slug",
+    "version": "1.0.0",
     "description": ":package_description",
     "keywords": [
         "Hunter",
