@@ -1,9 +1,9 @@
-export default function Index() {
+export default function Export() {
     return (
         <div className="flex h-full flex-1 flex-col gap-4 p-4">
-            <h1 className="text-2xl font-bold">:module_title</h1>
+            <h1 className="text-2xl font-bold">Export</h1>
             <p className="text-muted-foreground">
-                Welcome to the :module_title module.
+                Export :module_title data and reports.
             </p>
         </div>
     );

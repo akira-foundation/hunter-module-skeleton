@@ -27,6 +27,7 @@
         "akira/setup": "^1.3",
         "driftingly/rector-laravel": "^2.1",
         "fakerphp/faker": "^1.24",
+        "inertiajs/inertia-laravel": "^2.0",
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.14",
         "mockery/mockery": "^1.6",
