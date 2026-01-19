@@ -2,12 +2,13 @@ import AppLayout from "@/layouts/app-layout";
 import { type BreadcrumbItem } from "@/types";
 import { Head } from "@inertiajs/react";
 import { Package } from "lucide-react";
+import { type ReactNode } from "react";
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: "Home", href: "/" }];
 
 export default function Welcome() {
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <>
             <Head title="Welcome" />
             <div className="flex h-full flex-1 flex-col items-center justify-center gap-6 p-8">
                 <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/10">
@@ -42,6 +43,10 @@ export default function Welcome() {
                     </ul>
                 </div>
             </div>
-        </AppLayout>
+        </>
     );
 }
+
+Welcome.layout = (page: ReactNode) => (
+    <AppLayout breadcrumbs={breadcrumbs}>{page}</AppLayout>
+);

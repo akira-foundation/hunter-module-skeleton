@@ -1,4 +1,5 @@
 import AppLayout from "@/layouts/app-layout";
+import { type BreadcrumbItem } from "@/types";
 import { createInertiaApp } from "@inertiajs/react";
 import { createRoot } from "react-dom/client";
 import type { ReactNode } from "react";
@@ -7,6 +8,22 @@ interface PageModule {
     default: React.ComponentType & {
         layout?: (page: ReactNode) => ReactNode;
     };
+}
+
+function generateBreadcrumbs(pageName: string): BreadcrumbItem[] {
+    const parts = pageName.split("/");
+    const breadcrumbs: BreadcrumbItem[] = [{ title: "Home", href: "/" }];
+
+    let href = "";
+    for (const part of parts) {
+        href += `/${part.toLowerCase()}`;
+        breadcrumbs.push({
+            title: part.replace(/([A-Z])/g, " $1").trim(),
+            href,
+        });
+    }
+
+    return breadcrumbs;
 }
 
 createInertiaApp({
@@ -27,20 +44,23 @@ createInertiaApp({
 
         // Try workbench pages first, then module pages
         let page = workbenchPages[`./pages/${name}.tsx`];
+        let isModulePage = false;
 
         if (!page) {
             page = modulePages[`../../../resources/js/pages/${name}.tsx`];
+            isModulePage = true;
         }
 
         if (!page) {
             throw new Error(`Page not found: ${name}`);
         }
 
-        // Apply default layout to module pages that don't have one
+        // Apply default layout to pages that don't have one
         const pageComponent = page.default;
         if (!pageComponent.layout) {
+            const breadcrumbs = isModulePage ? generateBreadcrumbs(name) : [];
             pageComponent.layout = (page: ReactNode) => (
-                <AppLayout>{page}</AppLayout>
+                <AppLayout breadcrumbs={breadcrumbs}>{page}</AppLayout>
             );
         }
 
