@@ -53,7 +53,10 @@ npm run build
 
 ```bash
 # Start the development server
-php vendor/bin/testbench serve --host=127.0.0.1 --port=8088
+composer hunter:serve
+
+# Or with custom host/port
+php vendor/bin/testbench hunter:serve --host=0.0.0.0 --port=9000
 
 # Then open http://127.0.0.1:8088 in your browser
 ```

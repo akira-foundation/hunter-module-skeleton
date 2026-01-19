@@ -60,6 +60,8 @@
     "scripts": {
         "post-autoload-dump": "@composer run prepare",
         "prepare": "@php vendor/bin/testbench package:discover --ansi",
+        "serve": "@php vendor/bin/testbench hunter:serve",
+        "hunter:serve": "@serve",
         "lint": [
             "@refactor",
             "pint"
