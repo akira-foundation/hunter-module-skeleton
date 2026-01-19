@@ -32,6 +32,72 @@ return [
 
 Once installed, the module will be automatically registered with Hunter. You can access it at `/:module_slug`.
 
+## Local Development with Workbench
+
+This module includes a workbench environment powered by [Orchestra Testbench](https://packages.tools/testbench.html) that allows you to develop and test the module without installing it in a full Hunter application.
+
+### Setup
+
+```bash
+# Install PHP dependencies
+composer install
+
+# Install workbench JS dependencies
+cd workbench && npm install
+
+# Build workbench assets
+npm run build
+```
+
+### Running the Workbench
+
+```bash
+# Start the development server
+php vendor/bin/testbench serve --host=127.0.0.1 --port=8088
+
+# Then open http://127.0.0.1:8088 in your browser
+```
+
+### Workbench Features
+
+- Full Inertia + React environment matching Hunter's stack
+- Module navigation automatically appears in the sidebar
+- Light/dark theme toggle for testing both modes
+- Auto-layout injection for module pages (no need to wrap pages in layouts)
+- Hot module replacement when running `npm run dev` in the workbench directory
+
+### Adding Routes
+
+Define routes in `workbench/routes/web.php`:
+
+```php
+use Inertia\Inertia;
+
+Route::get('/:module_slug', fn () => Inertia::render(':ModuleName/Index'));
+```
+
+### Creating Pages
+
+Add React pages in `resources/js/pages/:ModuleName/`:
+
+```tsx
+// resources/js/pages/:ModuleName/Index.tsx
+import { Head } from "@inertiajs/react";
+
+export default function Index() {
+    return (
+        <>
+            <Head title=":module_name" />
+            <div className="p-6">
+                <h1>:module_name</h1>
+            </div>
+        </>
+    );
+}
+```
+
+Pages are automatically wrapped with the workbench layout.
+
 ## Testing
 
 ```bash
