@@ -9,6 +9,9 @@ export default defineConfig({
         laravel({
             input: ["resources/css/app.css", "resources/js/app.tsx"],
             refresh: true,
+            publicDirectory:
+                "../vendor/orchestra/testbench-core/laravel/public",
+            buildDirectory: "build",
         }),
         react(),
         tailwindcss(),
