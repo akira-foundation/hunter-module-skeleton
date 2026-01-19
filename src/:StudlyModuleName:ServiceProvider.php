@@ -6,7 +6,6 @@ namespace :VendorNamespace:\:StudlyModuleName:;
 
 use Hunter\Module\Contracts\ModuleServiceProvider;
 use Hunter\Module\Module\Module;
-use Hunter\Module\Navigation\NavItem;
 use Override;
 
 final class :StudlyModuleName:ServiceProvider extends ModuleServiceProvider
