@@ -32,51 +32,123 @@ return [
 
 Once installed, the module will be automatically registered with Hunter. You can access it at `/:module_slug`.
 
-## Local Development with Workbench
+## Development
 
-This module includes a workbench environment powered by [Orchestra Testbench](https://packages.tools/testbench.html) that allows you to develop and test the module without installing it in a full Hunter application.
+This module includes a standalone development environment that allows you to develop and test without installing it in a full Hunter application.
 
-### Setup
-
-```bash
-# Install PHP dependencies
-composer install
-
-# Install workbench JS dependencies
-cd workbench && npm install
-
-# Build workbench assets
-npm run build
-```
-
-### Running the Workbench
+### Quick Start
 
 ```bash
+# Install the dev environment
+php hunter install
+
 # Start the development server
-composer hunter:serve
-
-# Or with custom host/port
-php vendor/bin/testbench hunter:serve --host=0.0.0.0 --port=9000
-
-# Then open http://127.0.0.1:8088 in your browser
+php hunter serve
 ```
 
-### Workbench Features
+Then open http://127.0.0.1:8000 in your browser.
 
-- Full Inertia + React environment matching Hunter's stack
-- Module navigation automatically appears in the sidebar
-- Light/dark theme toggle for testing both modes
-- Auto-layout injection for module pages (no need to wrap pages in layouts)
-- Hot module replacement when running `npm run dev` in the workbench directory
+### Hunter CLI
+
+The `hunter` CLI provides commands for scaffolding and development:
+
+```bash
+# Show all available commands
+php hunter --help
+```
+
+#### Setup Commands
+
+| Command              | Description                               |
+| -------------------- | ----------------------------------------- |
+| `php hunter install` | Install and configure the dev environment |
+| `php hunter serve`   | Start the development server              |
+
+#### Make Commands
+
+All make commands create files in the module's `src/` directory with the correct namespace.
+
+| Command                                        | Output                                           |
+| ---------------------------------------------- | ------------------------------------------------ |
+| `php hunter make:action CreatePost`            | `src/Actions/CreatePost.php`                     |
+| `php hunter make:model Post`                   | `src/Models/Post.php`                            |
+| `php hunter make:model Post -m`                | Model + migration                                |
+| `php hunter make:model Post -f`                | Model + factory                                  |
+| `php hunter make:model Post -c`                | Model + controller                               |
+| `php hunter make:model Post -mfc`              | Model + migration + factory + controller         |
+| `php hunter make:controller PostController`    | `src/Http/Controllers/PostController.php`        |
+| `php hunter make:resource PostResource`        | `src/Http/Resources/PostResource.php`            |
+| `php hunter make:request StorePostRequest`     | `src/Http/Requests/StorePostRequest.php`         |
+| `php hunter make:middleware EnsurePostAccess`  | `src/Http/Middleware/EnsurePostAccess.php`       |
+| `php hunter make:migration create_posts_table` | `database/migrations/xxx_create_posts_table.php` |
+| `php hunter make:factory PostFactory`          | `database/factories/PostFactory.php`             |
+| `php hunter make:seeder PostSeeder`            | `database/seeders/PostSeeder.php`                |
+| `php hunter make:test PostTest`                | `tests/Feature/PostTest.php`                     |
+| `php hunter make:test PostTest --unit`         | `tests/Unit/PostTest.php`                        |
+
+#### Frontend Commands
+
+| Command                               | Output                                           |
+| ------------------------------------- | ------------------------------------------------ |
+| `php hunter make:page posts/index`    | `resources/js/pages/:ModuleName/posts/index.tsx` |
+| `php hunter make:page posts/show`     | `resources/js/pages/:ModuleName/posts/show.tsx`  |
+| `php hunter make:component post-card` | `resources/js/components/post-card.tsx`          |
+
+#### Artisan Commands
+
+Any command not recognized by Hunter CLI is passed to `php dev/artisan`:
+
+```bash
+php hunter migrate
+php hunter migrate:status
+php hunter tinker
+php hunter route:list
+php hunter db:seed
+```
+
+### Project Structure
+
+```
+hunter-:module_slug/
+├── src/
+│   ├── Actions/           # Action classes
+│   ├── Http/
+│   │   ├── Controllers/   # Controllers
+│   │   ├── Middleware/    # Middleware
+│   │   ├── Requests/      # Form requests
+│   │   └── Resources/     # API resources
+│   ├── Models/            # Eloquent models
+│   └── :ModuleNameServiceProvider.php
+├── config/
+│   └── :module_slug.php   # Module configuration
+├── database/
+│   ├── factories/         # Model factories
+│   ├── migrations/        # Database migrations
+│   └── seeders/           # Database seeders
+├── resources/
+│   └── js/
+│       ├── components/    # React components
+│       └── pages/         # Inertia pages
+│           └── :ModuleName/
+├── routes/
+│   └── :module_slug.php   # Module routes
+├── tests/
+│   ├── Feature/           # Feature tests
+│   └── Unit/              # Unit tests
+├── dev/                   # Development environment (gitignored)
+├── stubs/                 # File generation templates
+└── hunter                 # CLI script
+```
 
 ### Adding Routes
 
-Define routes in `workbench/routes/web.php`:
+Define routes in `routes/:module_slug.php`:
 
 ```php
 use Inertia\Inertia;
 
-Route::get('/:module_slug', fn () => Inertia::render(':ModuleName/Index'));
+Route::get('/:module_slug', fn () => Inertia::render(':ModuleName/Index'))->name(':module_slug.index');
+Route::get('/:module_slug/posts', fn () => Inertia::render(':ModuleName/posts/index'))->name(':module_slug.posts.index');
 ```
 
 ### Creating Pages
@@ -84,32 +156,64 @@ Route::get('/:module_slug', fn () => Inertia::render(':ModuleName/Index'));
 Add React pages in `resources/js/pages/:ModuleName/`:
 
 ```tsx
-// resources/js/pages/:ModuleName/Index.tsx
+// resources/js/pages/:ModuleName/posts/index.tsx
+import AppLayout from "@/layouts/app-layout";
 import { Head } from "@inertiajs/react";
 
 export default function Index() {
     return (
-        <>
-            <Head title=":module_name" />
-            <div className="p-6">
-                <h1>:module_name</h1>
+        <AppLayout>
+            <Head title="Posts" />
+            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+                <h1 className="text-2xl font-bold">Posts</h1>
             </div>
-        </>
+        </AppLayout>
     );
 }
 ```
 
-Pages are automatically wrapped with the workbench layout.
+### Creating Components
+
+Add React components in `resources/js/components/`:
+
+```tsx
+// resources/js/components/post-card.tsx
+export function PostCard({ post }: { post: Post }) {
+    return (
+        <div className="rounded-lg border p-4">
+            <h2 className="font-semibold">{post.title}</h2>
+            <p className="text-muted-foreground">{post.excerpt}</p>
+        </div>
+    );
+}
+```
 
 ## Testing
 
 ```bash
+# Run all tests
 composer test
+
+# Run specific test
+php hunter test --filter=PostTest
+
+# Run with coverage
+composer test:coverage
+```
+
+## Code Quality
+
+```bash
+# Format code with Pint
+composer format
+
+# Run static analysis with PHPStan
+composer analyse
 ```
 
 ## Releasing
 
-This package uses [release-it](https://github.com/release-it/release-it) for releases. To create a new release:
+This package uses [release-it](https://github.com/release-it/release-it) for releases:
 
 ```bash
 npm run release
