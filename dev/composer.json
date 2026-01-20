@@ -37,6 +37,10 @@
     "scripts": {
         "post-autoload-dump": [
             "@php artisan package:discover --ansi"
+        ],
+        "hunter:install": [
+            "composer install",
+            "@php artisan hunter:install"
         ]
     }
 }
