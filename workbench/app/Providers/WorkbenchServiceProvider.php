@@ -8,6 +8,7 @@ use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Workbench\App\Console\Commands\HunterKeyCommand;
+use Workbench\App\Console\Commands\HunterMigrateCommand;
 use Workbench\App\Console\Commands\HunterServeCommand;
 use Workbench\App\Http\Middleware\AutoLogin;
 use Workbench\App\Http\Middleware\EnsureModuleActive;
@@ -37,6 +38,7 @@ final class WorkbenchServiceProvider extends ServiceProvider
 
         $this->commands([
             HunterKeyCommand::class,
+            HunterMigrateCommand::class,
             HunterServeCommand::class,
         ]);
     }
