@@ -1,0 +1,587 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Hunter Module CLI
+ *
+ * A unified command-line interface for Hunter module development.
+ * Provides scaffolding commands and proxies to artisan.
+ */
+
+define('HUNTER_ROOT', __DIR__);
+define('HUNTER_DEV', HUNTER_ROOT . '/dev');
+define('HUNTER_STUBS', HUNTER_ROOT . '/stubs');
+
+/**
+ * Main CLI class
+ */
+final class HunterCLI
+{
+    private string $vendorNamespace;
+    private string $moduleName;
+    private string $moduleSlug;
+
+    public function __construct()
+    {
+        $this->loadModuleConfig();
+    }
+
+    public function run(array $argv): int
+    {
+        $command = $argv[1] ?? 'list';
+        $args = array_slice($argv, 2);
+
+        return match ($command) {
+            'install' => $this->install(),
+            'serve' => $this->serve($args),
+            'make:action' => $this->makeAction($args),
+            'make:model' => $this->makeModel($args),
+            'make:controller' => $this->makeController($args),
+            'make:resource' => $this->makeResource($args),
+            'make:request' => $this->makeRequest($args),
+            'make:middleware' => $this->makeMiddleware($args),
+            'make:migration' => $this->makeMigration($args),
+            'make:factory' => $this->makeFactory($args),
+            'make:seeder' => $this->makeSeeder($args),
+            'make:test' => $this->makeTest($args),
+            'make:page' => $this->makePage($args),
+            'make:component' => $this->makeComponent($args),
+            'list', '--help', '-h' => $this->showHelp(),
+            default => $this->passToArtisan($command, $args),
+        };
+    }
+
+    private function loadModuleConfig(): void
+    {
+        $composerPath = HUNTER_ROOT . '/composer.json';
+
+        if (!file_exists($composerPath)) {
+            $this->error('composer.json not found');
+            exit(1);
+        }
+
+        $composer = json_decode(file_get_contents($composerPath), true);
+        $autoload = $composer['autoload']['psr-4'] ?? [];
+
+        foreach ($autoload as $namespace => $path) {
+            if ($path === 'src/') {
+                // Namespace format: "Akira\\ModuleName\\"
+                $parts = explode('\\', trim($namespace, '\\'));
+                $this->vendorNamespace = $parts[0];
+                $this->moduleName = $parts[1] ?? $parts[0];
+                break;
+            }
+        }
+
+        // Get module slug from package name
+        $packageName = $composer['name'] ?? '';
+        if (preg_match('/hunter-(.+)$/', $packageName, $matches)) {
+            $this->moduleSlug = $matches[1];
+        } else {
+            $this->moduleSlug = $this->toKebabCase($this->moduleName);
+        }
+    }
+
+    // =========================================================================
+    // Commands
+    // =========================================================================
+
+    private function install(): int
+    {
+        $this->info('Installing Hunter dev environment...');
+
+        // Run composer install in dev directory
+        $this->runProcess(['composer', 'install', '--working-dir=' . HUNTER_DEV]);
+
+        // Run hunter:install artisan command
+        $this->runProcess(['php', HUNTER_DEV . '/artisan', 'hunter:install']);
+
+        return 0;
+    }
+
+    private function serve(array $args): int
+    {
+        $command = ['php', HUNTER_DEV . '/artisan', 'serve', ...$args];
+        passthru(implode(' ', array_map('escapeshellarg', $command)), $exitCode);
+        return $exitCode;
+    }
+
+    private function makeAction(array $args): int
+    {
+        $name = $args[0] ?? null;
+
+        if (!$name) {
+            $this->error('Please provide an action name');
+            return 1;
+        }
+
+        $className = $this->toStudlyCase($name);
+        $path = HUNTER_ROOT . '/src/Actions/' . $className . '.php';
+        $namespace = $this->vendorNamespace . '\\' . $this->moduleName . '\\Actions';
+
+        return $this->generateFromStub('action.stub', $path, [
+            '{{ namespace }}' => $namespace,
+            '{{ class }}' => $className,
+        ]);
+    }
+
+    private function makeModel(array $args): int
+    {
+        $name = null;
+        $withMigration = false;
+        $withFactory = false;
+        $withController = false;
+
+        foreach ($args as $arg) {
+            if (str_starts_with($arg, '-')) {
+                if (str_contains($arg, 'm')) $withMigration = true;
+                if (str_contains($arg, 'f')) $withFactory = true;
+                if (str_contains($arg, 'c')) $withController = true;
+            } else {
+                $name = $arg;
+            }
+        }
+
+        if (!$name) {
+            $this->error('Please provide a model name');
+            return 1;
+        }
+
+        $className = $this->toStudlyCase($name);
+        $path = HUNTER_ROOT . '/src/Models/' . $className . '.php';
+        $namespace = $this->vendorNamespace . '\\' . $this->moduleName . '\\Models';
+
+        $result = $this->generateFromStub('model.stub', $path, [
+            '{{ namespace }}' => $namespace,
+            '{{ class }}' => $className,
+        ]);
+
+        if ($result !== 0) return $result;
+
+        if ($withMigration) {
+            $tableName = $this->toSnakeCase($name) . 's';
+            $this->makeMigration(['create_' . $tableName . '_table']);
+        }
+
+        if ($withFactory) {
+            $this->makeFactory([$className . 'Factory']);
+        }
+
+        if ($withController) {
+            $this->makeController([$className . 'Controller']);
+        }
+
+        return 0;
+    }
+
+    private function makeController(array $args): int
+    {
+        $name = $args[0] ?? null;
+
+        if (!$name) {
+            $this->error('Please provide a controller name');
+            return 1;
+        }
+
+        $className = $this->toStudlyCase($name);
+        if (!str_ends_with($className, 'Controller')) {
+            $className .= 'Controller';
+        }
+
+        $path = HUNTER_ROOT . '/src/Http/Controllers/' . $className . '.php';
+        $namespace = $this->vendorNamespace . '\\' . $this->moduleName . '\\Http\\Controllers';
+
+        return $this->generateFromStub('controller.stub', $path, [
+            '{{ namespace }}' => $namespace,
+            '{{ class }}' => $className,
+        ]);
+    }
+
+    private function makeResource(array $args): int
+    {
+        $name = $args[0] ?? null;
+
+        if (!$name) {
+            $this->error('Please provide a resource name');
+            return 1;
+        }
+
+        $className = $this->toStudlyCase($name);
+        if (!str_ends_with($className, 'Resource')) {
+            $className .= 'Resource';
+        }
+
+        $path = HUNTER_ROOT . '/src/Http/Resources/' . $className . '.php';
+        $namespace = $this->vendorNamespace . '\\' . $this->moduleName . '\\Http\\Resources';
+
+        return $this->generateFromStub('resource.stub', $path, [
+            '{{ namespace }}' => $namespace,
+            '{{ class }}' => $className,
+        ]);
+    }
+
+    private function makeRequest(array $args): int
+    {
+        $name = $args[0] ?? null;
+
+        if (!$name) {
+            $this->error('Please provide a request name');
+            return 1;
+        }
+
+        $className = $this->toStudlyCase($name);
+        if (!str_ends_with($className, 'Request')) {
+            $className .= 'Request';
+        }
+
+        $path = HUNTER_ROOT . '/src/Http/Requests/' . $className . '.php';
+        $namespace = $this->vendorNamespace . '\\' . $this->moduleName . '\\Http\\Requests';
+
+        return $this->generateFromStub('request.stub', $path, [
+            '{{ namespace }}' => $namespace,
+            '{{ class }}' => $className,
+        ]);
+    }
+
+    private function makeMiddleware(array $args): int
+    {
+        $name = $args[0] ?? null;
+
+        if (!$name) {
+            $this->error('Please provide a middleware name');
+            return 1;
+        }
+
+        $className = $this->toStudlyCase($name);
+        $path = HUNTER_ROOT . '/src/Http/Middleware/' . $className . '.php';
+        $namespace = $this->vendorNamespace . '\\' . $this->moduleName . '\\Http\\Middleware';
+
+        return $this->generateFromStub('middleware.stub', $path, [
+            '{{ namespace }}' => $namespace,
+            '{{ class }}' => $className,
+        ]);
+    }
+
+    private function makeMigration(array $args): int
+    {
+        $name = $args[0] ?? null;
+
+        if (!$name) {
+            $this->error('Please provide a migration name');
+            return 1;
+        }
+
+        $snakeName = $this->toSnakeCase($name);
+        $timestamp = date('Y_m_d_His');
+        $filename = $timestamp . '_' . $snakeName . '.php';
+        $path = HUNTER_ROOT . '/database/migrations/' . $filename;
+
+        // Determine if this is a create or update migration
+        $isCreate = str_starts_with($snakeName, 'create_');
+        $stub = $isCreate ? 'migration.create.stub' : 'migration.update.stub';
+
+        // Extract table name
+        $tableName = $snakeName;
+        $tableName = preg_replace('/^create_/', '', $tableName);
+        $tableName = preg_replace('/^add_\w+_to_/', '', $tableName);
+        $tableName = preg_replace('/_table$/', '', $tableName);
+
+        $className = $this->toStudlyCase($snakeName);
+
+        return $this->generateFromStub($stub, $path, [
+            '{{ class }}' => $className,
+            '{{ table }}' => $tableName,
+        ]);
+    }
+
+    private function makeFactory(array $args): int
+    {
+        $name = $args[0] ?? null;
+
+        if (!$name) {
+            $this->error('Please provide a factory name');
+            return 1;
+        }
+
+        $className = $this->toStudlyCase($name);
+        if (!str_ends_with($className, 'Factory')) {
+            $className .= 'Factory';
+        }
+
+        $modelName = str_replace('Factory', '', $className);
+        $path = HUNTER_ROOT . '/database/factories/' . $className . '.php';
+        $namespace = $this->vendorNamespace . '\\' . $this->moduleName . '\\Database\\Factories';
+        $modelNamespace = $this->vendorNamespace . '\\' . $this->moduleName . '\\Models\\' . $modelName;
+
+        return $this->generateFromStub('factory.stub', $path, [
+            '{{ namespace }}' => $namespace,
+            '{{ class }}' => $className,
+            '{{ model }}' => $modelName,
+            '{{ modelNamespace }}' => $modelNamespace,
+        ]);
+    }
+
+    private function makeSeeder(array $args): int
+    {
+        $name = $args[0] ?? null;
+
+        if (!$name) {
+            $this->error('Please provide a seeder name');
+            return 1;
+        }
+
+        $className = $this->toStudlyCase($name);
+        if (!str_ends_with($className, 'Seeder')) {
+            $className .= 'Seeder';
+        }
+
+        $path = HUNTER_ROOT . '/database/seeders/' . $className . '.php';
+        $namespace = $this->vendorNamespace . '\\' . $this->moduleName . '\\Database\\Seeders';
+
+        return $this->generateFromStub('seeder.stub', $path, [
+            '{{ namespace }}' => $namespace,
+            '{{ class }}' => $className,
+        ]);
+    }
+
+    private function makeTest(array $args): int
+    {
+        $name = null;
+        $isUnit = false;
+
+        foreach ($args as $arg) {
+            if ($arg === '--unit') {
+                $isUnit = true;
+            } else {
+                $name = $arg;
+            }
+        }
+
+        if (!$name) {
+            $this->error('Please provide a test name');
+            return 1;
+        }
+
+        $className = $this->toStudlyCase($name);
+        if (!str_ends_with($className, 'Test')) {
+            $className .= 'Test';
+        }
+
+        $directory = $isUnit ? 'Unit' : 'Feature';
+        $path = HUNTER_ROOT . '/tests/' . $directory . '/' . $className . '.php';
+        $stub = $isUnit ? 'test.unit.stub' : 'test.stub';
+
+        return $this->generateFromStub($stub, $path, [
+            '{{ class }}' => $className,
+        ]);
+    }
+
+    private function makePage(array $args): int
+    {
+        $name = $args[0] ?? null;
+
+        if (!$name) {
+            $this->error('Please provide a page name (e.g., foo/index or settings/general)');
+            return 1;
+        }
+
+        // Split path and convert each segment to kebab-case
+        $parts = explode('/', $name);
+        $parts = array_map(fn($part) => $this->toKebabCase($part), $parts);
+        $fileName = array_pop($parts);
+        $subDir = implode('/', $parts);
+
+        // Build full path: resources/js/pages/{ModuleName}/{subdir}/{file}.tsx
+        $fullPath = HUNTER_ROOT . '/resources/js/pages/' . $this->moduleName;
+        if ($subDir) {
+            $fullPath .= '/' . $subDir;
+        }
+        $fullPath .= '/' . $fileName . '.tsx';
+
+        // Generate title from filename
+        $title = $this->toTitleCase($fileName);
+        $className = $this->toStudlyCase($fileName);
+
+        return $this->generateFromStub('page.stub', $fullPath, [
+            '{{ class }}' => $className,
+            '{{ title }}' => $title,
+        ]);
+    }
+
+    private function makeComponent(array $args): int
+    {
+        $name = $args[0] ?? null;
+
+        if (!$name) {
+            $this->error('Please provide a component name (e.g., foo-card)');
+            return 1;
+        }
+
+        // Convert to kebab-case
+        $fileName = $this->toKebabCase($name);
+        $path = HUNTER_ROOT . '/resources/js/components/' . $fileName . '.tsx';
+
+        // Generate class name (PascalCase)
+        $className = $this->toStudlyCase($name);
+
+        return $this->generateFromStub('component.stub', $path, [
+            '{{ class }}' => $className,
+        ]);
+    }
+
+    private function passToArtisan(string $command, array $args): int
+    {
+        $artisanPath = HUNTER_DEV . '/artisan';
+
+        if (!file_exists($artisanPath)) {
+            $this->error('Dev environment not installed. Run: ./hunter install');
+            return 1;
+        }
+
+        $fullCommand = ['php', $artisanPath, $command, ...$args];
+        passthru(implode(' ', array_map('escapeshellarg', $fullCommand)), $exitCode);
+        return $exitCode;
+    }
+
+    private function showHelp(): int
+    {
+        $this->line('');
+        $this->line("\033[1mHunter Module CLI\033[0m");
+        $this->line('');
+        $this->line("\033[33mUsage:\033[0m");
+        $this->line('  ./hunter <command> [options] [arguments]');
+        $this->line('');
+        $this->line("\033[33mSetup Commands:\033[0m");
+        $this->line("  \033[32minstall\033[0m              Install and configure the dev environment");
+        $this->line("  \033[32mserve\033[0m                Start the development server");
+        $this->line('');
+        $this->line("\033[33mMake Commands (create in module src/):\033[0m");
+        $this->line("  \033[32mmake:action\033[0m          Create a new Action class");
+        $this->line("  \033[32mmake:model\033[0m           Create a new Eloquent model [-m migration] [-f factory] [-c controller]");
+        $this->line("  \033[32mmake:controller\033[0m      Create a new controller class");
+        $this->line("  \033[32mmake:resource\033[0m        Create a new API resource");
+        $this->line("  \033[32mmake:request\033[0m         Create a new form request class");
+        $this->line("  \033[32mmake:middleware\033[0m      Create a new middleware class");
+        $this->line("  \033[32mmake:migration\033[0m       Create a new migration file");
+        $this->line("  \033[32mmake:factory\033[0m         Create a new model factory");
+        $this->line("  \033[32mmake:seeder\033[0m          Create a new seeder class");
+        $this->line("  \033[32mmake:test\033[0m            Create a new Pest test [--unit]");
+        $this->line('');
+        $this->line("\033[33mFrontend Commands:\033[0m");
+        $this->line("  \033[32mmake:page\033[0m            Create a new Inertia page (e.g., foo/index)");
+        $this->line("  \033[32mmake:component\033[0m       Create a new React component (e.g., foo-card)");
+        $this->line('');
+        $this->line("\033[33mArtisan Commands:\033[0m");
+        $this->line("  Any other command is passed to \033[36mphp dev/artisan\033[0m");
+        $this->line("  Example: \033[36m./hunter migrate\033[0m, \033[36m./hunter tinker\033[0m, \033[36m./hunter route:list\033[0m");
+        $this->line('');
+
+        return 0;
+    }
+
+    // =========================================================================
+    // Helpers
+    // =========================================================================
+
+    private function generateFromStub(string $stub, string $path, array $replacements): int
+    {
+        $stubPath = HUNTER_STUBS . '/' . $stub;
+
+        if (!file_exists($stubPath)) {
+            $this->error("Stub not found: {$stub}");
+            return 1;
+        }
+
+        // Create directory if needed
+        $directory = dirname($path);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        // Check if file already exists
+        if (file_exists($path)) {
+            $this->error("File already exists: " . $this->relativePath($path));
+            return 1;
+        }
+
+        // Generate content
+        $content = file_get_contents($stubPath);
+        $content = str_replace(array_keys($replacements), array_values($replacements), $content);
+
+        // Write file
+        file_put_contents($path, $content);
+
+        $this->success("Created: " . $this->relativePath($path));
+        return 0;
+    }
+
+    private function runProcess(array $command): int
+    {
+        $process = proc_open(
+            $command,
+            [STDIN, STDOUT, STDERR],
+            $pipes
+        );
+
+        return proc_close($process);
+    }
+
+    private function relativePath(string $path): string
+    {
+        return str_replace(HUNTER_ROOT . '/', '', $path);
+    }
+
+    private function toStudlyCase(string $value): string
+    {
+        $value = str_replace(['-', '_', '/'], ' ', $value);
+        return str_replace(' ', '', ucwords($value));
+    }
+
+    private function toKebabCase(string $value): string
+    {
+        $value = preg_replace('/([a-z])([A-Z])/', '$1-$2', $value);
+        $value = str_replace(['_', ' ', '/'], '-', $value);
+        $value = preg_replace('/-+/', '-', $value);
+        return strtolower(trim($value, '-'));
+    }
+
+    private function toSnakeCase(string $value): string
+    {
+        $value = preg_replace('/([a-z])([A-Z])/', '$1_$2', $value);
+        $value = str_replace(['-', ' '], '_', $value);
+        $value = preg_replace('/_+/', '_', $value);
+        return strtolower(trim($value, '_'));
+    }
+
+    private function toTitleCase(string $value): string
+    {
+        $value = str_replace(['-', '_'], ' ', $value);
+        return ucwords($value);
+    }
+
+    private function info(string $message): void
+    {
+        $this->line("\033[34m{$message}\033[0m");
+    }
+
+    private function success(string $message): void
+    {
+        $this->line("\033[32m{$message}\033[0m");
+    }
+
+    private function error(string $message): void
+    {
+        $this->line("\033[31mError: {$message}\033[0m");
+    }
+
+    private function line(string $message): void
+    {
+        echo $message . PHP_EOL;
+    }
+}
+
+// Run the CLI
+$cli = new HunterCLI();
+exit($cli->run($argv));

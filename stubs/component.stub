@@ -1,0 +1,7 @@
+export function {{ class }}() {
+    return (
+        <div>
+            {{ class }}
+        </div>
+    );
+}
