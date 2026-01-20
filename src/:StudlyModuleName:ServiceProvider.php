@@ -68,7 +68,7 @@ final class :StudlyModuleName:ServiceProvider extends ModuleServiceProvider
 
                 // External link - Hunter Module documentation
                 NavItem::make('Documentation')
-                    ->href('https://packages.akira-io.com/packages/hunter-module')
+                    ->href('https://github.com/akira-foundation/hunter-module-skeleton/blob/1.x/docs/01-installation.md')
                     ->icon('BookOpen')
                     ->external()
                     ->order(80),
