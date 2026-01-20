@@ -5,7 +5,6 @@
 /.github            export-ignore
 /art                export-ignore
 /docs               export-ignore
-/workbench          export-ignore
 /.php_cs.dist.php   export-ignore
 /psalm.xml          export-ignore
 /psalm.xml.dist     export-ignore
