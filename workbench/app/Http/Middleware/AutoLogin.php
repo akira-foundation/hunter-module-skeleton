@@ -8,6 +8,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 use Workbench\App\Models\User;
 
 /**
@@ -18,7 +19,16 @@ final class AutoLogin
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! Auth::check()) {
+        try {
+            $isAuthenticated = Auth::check();
+        } catch (Throwable) {
+            // Session has stale user_id after database reset
+            $isAuthenticated = false;
+            Auth::logout();
+            $request->session()->invalidate();
+        }
+
+        if (! $isAuthenticated) {
             $user = User::firstOrCreate(
                 ['email' => 'dev@hunter.local'],
                 [
