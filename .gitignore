@@ -2,6 +2,8 @@
 composer.lock
 /vendor
 
+# Development Environment Runtime Files (dev/ folder is versioned, but runtime files are not)
+
 # Frontend Assets
 /node_modules
 

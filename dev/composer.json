@@ -1,0 +1,42 @@
+{
+    "name": "hunter/module-dev",
+    "type": "project",
+    "require": {
+        "php": "^8.4",
+        ":vendor_slug/hunter-:module_slug": "@dev",
+        "inertiajs/inertia-laravel": "^2.0",
+        "laravel/framework": "^12.0",
+        "laravel/wayfinder": "^0.1",
+        "tightenco/ziggy": "^2.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "..",
+            "options": {
+                "symlink": true
+            }
+        }
+    ],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "@php artisan package:discover --ansi"
+        ]
+    }
+}

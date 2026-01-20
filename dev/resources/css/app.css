@@ -1,0 +1,21 @@
+/**
+ * Main Application Stylesheet
+ * Imports all CSS modules in organized order
+ */
+
+@import 'tailwindcss';
+@plugin 'tailwindcss-animate';
+
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+
+@custom-variant dark (&:is(.dark *));
+
+/* Base Styles */
+@import './base/variables.css';
+@import './base/reset.css';
+
+/* Utility Classes */
+@import './utilities/animations.css';
+@import './utilities/effects.css';
+@import './utilities/mobile.css';
