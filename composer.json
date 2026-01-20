@@ -54,7 +54,11 @@
         }
     },
     "scripts": {
-        "dev:serve": "@php dev/artisan serve",
+        "hunter:install": [
+            "@composer install --working-dir=dev",
+            "@php dev/artisan hunter:install"
+        ],
+        "hunter:serve": "@php dev/artisan serve",
         "lint": [
             "@refactor",
             "pint"
