@@ -10,9 +10,9 @@ use Illuminate\Support\ServiceProvider;
 use Workbench\App\Console\Commands\HunterKeyCommand;
 use Workbench\App\Console\Commands\HunterMigrateCommand;
 use Workbench\App\Console\Commands\HunterServeCommand;
-use Workbench\App\Http\Middleware\AutoLogin;
 use Workbench\App\Http\Middleware\EnsureModuleActive;
 use Workbench\App\Http\Middleware\HandleInertiaRequests;
+use Workbench\App\Http\Middleware\WorkbenchAuth;
 use Workbench\App\Models\User;
 
 final class WorkbenchServiceProvider extends ServiceProvider
@@ -31,9 +31,8 @@ final class WorkbenchServiceProvider extends ServiceProvider
 
         // Register middleware aliases
         $router->aliasMiddleware('module.active', EnsureModuleActive::class);
+        $router->aliasMiddleware('auth', WorkbenchAuth::class);
 
-        // Add AutoLogin first (before auth check) and HandleInertiaRequests last
-        $router->prependMiddlewareToGroup('web', AutoLogin::class);
         $router->pushMiddlewareToGroup('web', HandleInertiaRequests::class);
 
         $this->commands([
