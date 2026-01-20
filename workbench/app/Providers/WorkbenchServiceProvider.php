@@ -9,6 +9,8 @@ use Illuminate\Foundation\Http\Kernel;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Workbench\App\Console\Commands\HunterKeyCommand;
+use Workbench\App\Console\Commands\HunterServeCommand;
 use Workbench\App\Http\Middleware\Authenticate;
 use Workbench\App\Http\Middleware\EnsureModuleActive;
 use Workbench\App\Http\Middleware\HandleInertiaRequests;
@@ -36,7 +38,12 @@ final class WorkbenchServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        View::addLocation(__DIR__ . '/../../resources/views');
+        View::addLocation(__DIR__.'/../../resources/views');
+
+        $this->commands([
+            HunterKeyCommand::class,
+            HunterServeCommand::class,
+        ]);
 
         // Override module.active AFTER HunterModuleServiceProvider registers it
         $this->app->booted(function (): void {
