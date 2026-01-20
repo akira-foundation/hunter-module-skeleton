@@ -451,7 +451,7 @@ final class HunterCLI
         $this->line("\033[1mHunter Module CLI\033[0m");
         $this->line('');
         $this->line("\033[33mUsage:\033[0m");
-        $this->line('  ./hunter <command> [options] [arguments]');
+        $this->line('  php hunter <command> [options] [arguments]');
         $this->line('');
         $this->line("\033[33mSetup Commands:\033[0m");
         $this->line("  \033[32minstall\033[0m              Install and configure the dev environment");
@@ -475,7 +475,7 @@ final class HunterCLI
         $this->line('');
         $this->line("\033[33mArtisan Commands:\033[0m");
         $this->line("  Any other command is passed to \033[36mphp dev/artisan\033[0m");
-        $this->line("  Example: \033[36m./hunter migrate\033[0m, \033[36m./hunter tinker\033[0m, \033[36m./hunter route:list\033[0m");
+        $this->line("  Example: \033[36mphp hunter migrate\033[0m, \033[36mphp hunter tinker\033[0m, \033[36mphp hunter route:list\033[0m");
         $this->line('');
 
         return 0;
